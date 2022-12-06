@@ -5,5 +5,5 @@ import (
 )
 
 type State interface {
-	Run(status status.Status) int
+	Run(status status.Status) status.Status
 }
