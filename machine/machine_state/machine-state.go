@@ -12,5 +12,4 @@ type NetworkState struct {
 	MyAddress     string
 	UpAddress     string
 	DownAddresses []string
-	MasterAddress string
 }
