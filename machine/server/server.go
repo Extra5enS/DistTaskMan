@@ -1,62 +1,69 @@
 package server
 
 import (
+	"bufio"
+	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 )
 
 type Server struct {
-	server *http.Server
+	conn  *net.Conn
+	tasks chan Task
 }
 
 func NewServer(address string, tasks chan Task) (Server, error) {
+	ln, _ := net.Listen("tcp", address)
+	conn, _ := ln.Accept()
+
 	mux := http.NewServeMux()
 	for s, f := range handleGen {
 		mux.HandleFunc(s, f(tasks))
 	}
 	return Server{
-		server: &http.Server{
-			Addr:    address,
-			Handler: mux,
-		},
+		conn:  &conn,
+		tasks: tasks,
 	}, nil
 }
 
 func (m Server) Run(end chan error) {
 	go func(end chan error) {
-		err := m.server.ListenAndServe()
-		end <- err
+		for {
+			json_map := make(map[string]interface{})
+			connReader := bufio.NewReader(*m.conn)
+			line, isPrefix, err := connReader.ReadLine()
+			err = json.Unmarshal(line, json_map)
+
+			handles[args[0]](*m.conn, args[1:], m.tasks)
+		}
 	}(end)
 }
 
-var handleGen = map[string]func(tasks chan Task) func(w http.ResponseWriter, r *http.Request){
-	"/hello": func(tasks chan Task) func(w http.ResponseWriter, r *http.Request) {
-		return func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, "Hello, world!\n")
-		}
+var handles = map[string]func(conn net.Conn, args []string, tasks chan Task){
+	"hello": func(conn net.Conn, args []string, tasks chan Task) {
+		conn.Write([]byte("Hello, world!\n"))
 	},
-	"/master_req": func(tasks chan Task) func(w http.ResponseWriter, r *http.Request) {
-		return func(w http.ResponseWriter, r *http.Request) {
-			if !r.URL.Query().Has("address") {
-				io.WriteString(w, "error: no address")
-				return
-			}
-			address := r.URL.Query().Get("address")
-			if !r.URL.Query().Has("num") {
-				io.WriteString(w, "error: no num")
-				return
-			}
-			num := r.URL.Query().Get("num")
-			sols := make(chan Sol)
-			task := Task{
-				Req:      "master_req",
-				Args:     []string{address, num},
-				Solution: sols,
-			}
-			tasks <- task
-
-			sol := <-sols
-			io.WriteString(w, string(sol))
+	"master_req": func(conn net.Conn, args []string, tasks chan Task) {
+		if !r.URL.Query().Has("address") {
+			io.WriteString(w, "error: no address")
+			return
 		}
+		address := r.URL.Query().Get("address")
+		if !r.URL.Query().Has("num") {
+			io.WriteString(w, "error: no num")
+			return
+		}
+		num := r.URL.Query().Get("num")
+		sols := make(chan Sol)
+		task := Task{
+			Req:      "master_req",
+			Args:     []string{address, num},
+			Solution: sols,
+		}
+		tasks <- task
+
+		sol := <-sols
+		io.WriteString(conn, string(sol))
 	},
 }
