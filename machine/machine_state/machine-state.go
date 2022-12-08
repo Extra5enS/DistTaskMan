@@ -7,9 +7,11 @@ type MachineState struct {
 }
 
 type NetworkState struct {
-	MyLvL         int
-	MyNum         uint // generates when master process starts
-	MyAddress     string
-	UpAddress     string
-	DownAddresses []string
+	MyLvL            int
+	MyNum            uint // generates when master process starts
+	MyAddress        string
+	UpAddress        string
+	DownAddresses    []string
+	UnknownAddresses []string
+	ListenPort       string
 }
