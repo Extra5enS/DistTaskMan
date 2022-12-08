@@ -1,19 +1,25 @@
-package state
+package process
 
 import (
 	"github.com/Extra5enS/DistTaskMan/machine/machine_state"
+	"github.com/Extra5enS/DistTaskMan/machine/server"
 	"github.com/Extra5enS/DistTaskMan/machine/status"
 )
 
-type MasterState struct {
-	ms *machine_state.MachineState
+type masterProcess struct {
+	ms    *machine_state.MachineState
+	tasks chan server.Task
+	sol   chan server.Sol
 }
 
-func (ms *MasterState) Run(s status.Status) status.Status {
+func (ms *masterProcess) Run(s status.Status) status.Status {
 	return 0
 }
 
-func (mms *MasterState) Init(ms *machine_state.MachineState) error {
+func NewMasterProcess(ms *machine_state.MachineState, tasks chan server.Task, sols chan server.Sol) masterProcess {
+	mms := masterProcess{}
 	mms.ms = ms
-	return nil
+	mms.tasks = tasks
+	mms.sol = sols
+	return mms
 }
