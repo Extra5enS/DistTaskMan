@@ -12,8 +12,9 @@ func main() {
 	tasks := make(chan server.Task)
 	ms := machine_state.MachineState{
 		Net: machine_state.NetworkState{
-			MyNum:     uint(rand.Int31()),
-			MyAddress: "0.0.0.0:3333",
+			MyNum:            uint(rand.Int31()),
+			MyAddress:        "0.0.0.0:3333",
+			UnknownAddresses: []string{"0.0.0.0:4444"},
 		},
 	}
 	m, _ := machine.NewMachine(&ms, tasks)

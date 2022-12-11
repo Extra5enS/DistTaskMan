@@ -1,6 +1,7 @@
 package process
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"time"
@@ -19,9 +20,23 @@ func (ms *masterProcess) Run(s status.Status) status.Status {
 	select {
 	case t := <-ms.tasks:
 		go MasterTasks[t.Req](t, ms.ms)
-	case <-time.After(5 * time.Second):
+	case <-time.After(20 * time.Second):
+
 		for _, address := range ms.ms.Net.UnknownAddresses {
-			conn, _ := net.Dial("tcp", address)
+			conn, err := net.Dial("tcp", address)
+			if err != nil {
+				fmt.Println("Can't establish conection")
+				return status.ERROR_UNKNOWEN_STATUS
+			}
+			fmt.Println("send")
+			fmt.Fprintf(conn, `{"name":"master_req", "args":{"address":"%s", "num":"%d"}}`+"\n", ms.ms.Net.MyAddress, ms.ms.Net.MyNum)
+			fmt.Println("send end")
+			message, _, err := bufio.NewReader(conn).ReadLine()
+			if err != nil {
+				fmt.Println("Can't Read line")
+				return status.ERROR_UNKNOWEN_STATUS
+			}
+			fmt.Printf("%s\n", message)
 		}
 	}
 	return status.OK_STATUS
@@ -37,6 +52,6 @@ func NewMasterProcess(ms *machine_state.MachineState, tasks chan server.Task) ma
 var MasterTasks = map[string]func(task server.Task, ms *machine_state.MachineState){
 	"master_req": func(task server.Task, ms *machine_state.MachineState) {
 		fmt.Println(task)
-		task.Solution <- server.Sol(fmt.Sprintf("Sent num:%s, Server num:%d", task.Args[1], ms.Net.MyNum))
+		task.Solution <- server.Sol(fmt.Sprintf(`{"my_num":"%s", "server_num":"%d"}`+"\n", task.Args[1], ms.Net.MyNum))
 	},
 }
