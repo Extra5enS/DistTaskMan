@@ -25,13 +25,12 @@ func (m *Machine) Run() error {
 		select {
 		case t := <-m.tasks:
 			go MasterTasks[t.Req](t, m.ms)
-		case <-time.After(time.Minute):
+		case <-time.After(20 * time.Second):
 			fmt.Println("Hello in a min")
 		case <-end:
-			break
+			return nil
 		}
 	}
-	return nil
 }
 
 func NewMachine(ms *machine_state.MachineState, tasks chan server.Task) (Machine, error) {
@@ -49,6 +48,6 @@ func NewMachine(ms *machine_state.MachineState, tasks chan server.Task) (Machine
 var MasterTasks = map[string]func(task server.Task, ms *machine_state.MachineState){
 	"master_req": func(task server.Task, ms *machine_state.MachineState) {
 		fmt.Println(task)
-		task.Solution <- server.Sol(fmt.Sprintf("Sent num:%s, Server num:%d", task.Args[1], ms.Net.MyNum))
+		task.Solution <- server.Sol(fmt.Sprintf(`{"req_num":"%s", "res_num":"%d"}`, task.Args[1], ms.Net.MyNum))
 	},
 }

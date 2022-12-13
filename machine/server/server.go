@@ -37,6 +37,7 @@ var handleGen = map[string]func(tasks chan Task) func(w http.ResponseWriter, r *
 	},
 	"/master_req": func(tasks chan Task) func(w http.ResponseWriter, r *http.Request) {
 		return func(w http.ResponseWriter, r *http.Request) {
+			//log.Println(r)
 			if !r.URL.Query().Has("address") {
 				io.WriteString(w, "error: no address")
 				return
@@ -47,16 +48,23 @@ var handleGen = map[string]func(tasks chan Task) func(w http.ResponseWriter, r *
 				return
 			}
 			num := r.URL.Query().Get("num")
-			sols := make(chan Sol)
-			task := Task{
-				Req:      "master_req",
-				Args:     []string{address, num},
-				Solution: sols,
-			}
-			tasks <- task
 
-			sol := <-sols
-			io.WriteString(w, string(sol))
+			switch r.Method {
+			case "GET":
+				sols := make(chan Sol)
+				task := Task{
+					Req:      "master_req",
+					Args:     []string{address, num},
+					Solution: sols,
+				}
+				tasks <- task
+				sol := <-sols
+				io.WriteString(w, string(sol))
+			case "POST":
+				io.WriteString(w, "Post")
+			default:
+			}
+
 		}
 	},
 }
